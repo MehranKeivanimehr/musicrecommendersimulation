@@ -13,6 +13,13 @@ def make_small_recommender() -> Recommender:
             valence=0.9,
             danceability=0.8,
             acousticness=0.2,
+            instrumentalness=0.05,
+            liveness=0.1,
+            popularity=75,
+            release_decade=2020,
+            detailed_mood="euphoric",
+            speechiness=0.05,
+            mode=1,
         ),
         Song(
             id=2,
@@ -25,6 +32,13 @@ def make_small_recommender() -> Recommender:
             valence=0.6,
             danceability=0.5,
             acousticness=0.9,
+            instrumentalness=0.8,
+            liveness=0.07,
+            popularity=60,
+            release_decade=2020,
+            detailed_mood="dreamy",
+            speechiness=0.03,
+            mode=0,
         ),
     ]
     return Recommender(songs)
@@ -36,12 +50,13 @@ def test_recommend_returns_songs_sorted_by_score():
         favorite_mood="happy",
         target_energy=0.8,
         likes_acoustic=False,
+        likes_instrumental=False,
     )
     rec = make_small_recommender()
     results = rec.recommend(user, k=2)
 
     assert len(results) == 2
-    # Starter expectation: the pop, happy, high energy song should score higher
+    # The pop/happy/high-energy song should score higher than the lofi/chill song
     assert results[0].genre == "pop"
     assert results[0].mood == "happy"
 
@@ -52,6 +67,7 @@ def test_explain_recommendation_returns_non_empty_string():
         favorite_mood="happy",
         target_energy=0.8,
         likes_acoustic=False,
+        likes_instrumental=False,
     )
     rec = make_small_recommender()
     song = rec.songs[0]
