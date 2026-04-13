@@ -11,23 +11,84 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
-
 ---
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world music recommenders like Spotify or Apple Music combine two types of signals: what a song *is* (its genre, tempo, mood, and acoustic qualities) and what *people like you* have historically enjoyed. This project focuses on the first approach — content-based filtering — which means every recommendation is driven by how closely a song's measurable features match a user's stated preferences. The system scores each song in the catalog using a weighted formula that rewards genre and mood matches most heavily, then uses energy closeness as a continuous tiebreaker. Songs are ranked by that score and the top results are returned. This version prioritizes transparency and simplicity: every recommendation can be explained in plain language, and the weights are visible constants that can be tuned to change how the system behaves.
 
-Some prompts to answer:
+**System Flowchart**
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+```mermaid
+flowchart TD
+    A([User Preferences\ngenre · mood · energy]) --> C
+    B([songs.csv catalog]) --> C
 
-You can include a simple diagram or bullet list if helpful.
+    C[For each song in catalog] --> D
+
+    D[Compare song features\nto user preferences] --> E
+
+    E[Calculate score\n+2.0 genre match\n+1.0 mood match\n+0.0–1.0 energy similarity] --> F
+
+    F[Store song + score] --> G{More songs?}
+
+    G -- Yes --> C
+    G -- No --> H[Sort all songs\nby score descending]
+
+    H --> I([Return top K\nrecommendations])
+```
+
+> The `.mmd` source for this diagram is saved at [`recommender_flow.mmd`](recommender_flow.mmd).
+
+**Algorithm Recipe**
+
+This is the step-by-step scoring logic the recommender follows for every song:
+
+```
+score = 0.0
+
+1. Genre match:
+   if song.genre == user.favorite_genre → score += 2.0
+
+2. Mood match:
+   if song.mood == user.favorite_mood   → score += 1.0
+
+3. Energy similarity:
+   energy_sim = 1.0 - abs(song.energy - user.target_energy)  # always 0.0–1.0
+   score += energy_sim * 1.0                                  # max contribution: +1.0
+
+Maximum possible score: 4.0
+```
+
+**How the Recommender computes a score**
+
+Each song is scored independently against the user profile using a weighted formula. Genre and mood each produce a 0 or 1 depending on whether they match the user's preference. Energy produces a closeness value between 0 and 1, where 1 means a perfect match and the score decreases linearly as the song's energy drifts from the user's target. Each result is multiplied by its weight and summed. The maximum possible score is 4.0 (genre + mood + full energy match), so you can optionally normalize by dividing by 4.0 to get a value between 0 and 1.
+
+**How the system chooses which songs to recommend**
+
+After every song in the catalog is scored, the system sorts all songs from highest to lowest score and returns the top `k` results (default is 5). Songs with equal scores keep their original catalog order. The final list is what the user sees as their recommendations.
+
+**Potential Biases to Watch For**
+
+- **Genre dominance.** Because genre is worth twice as much as mood, songs in the wrong genre but with a perfect mood and energy match will almost always lose to a genre match with poor mood and energy. A great song in a neighboring genre (e.g., `indie pop` when the user wants `pop`) will be systematically underranked.
+- **Sparse catalog problem.** With only 18 songs and 15 distinct genres, genre matches are rare. When no genre match exists, the ranking collapses to mood + energy — which may not reflect what the user actually wants.
+- **Energy is always rewarded.** Even a song with 0.5 energy difference still earns 0.5 points. No song is ever penalized to zero on energy alone, which means poor-fit songs can still rank ahead of slightly better alternatives if the catalog has no categorical matches.
+- **Mood is binary.** A song labeled `chill` and one labeled `relaxed` are treated as completely different, even though a human listener would find them similar. This can make the system feel overly strict.
+
+**Song features used in scoring**
+
+- `genre` — categorical; binary match against the user's favorite genre (+2.0)
+- `mood` — categorical; binary match against the user's favorite mood (+1.0)
+- `energy` — float 0–1; scored by closeness to the user's target energy level (+0.0 to +1.0)
+- `tempo_bpm`, `valence`, `danceability`, `acousticness`, `instrumentalness`, `liveness` — stored but not currently scored; available for future experiments
+- `title`, `artist`, `id` — metadata only; used for display, not scoring
+
+**UserProfile fields**
+
+- `favorite_genre` — the genre the user most consistently listens to
+- `favorite_mood` — the mood setting the user prefers, such as chill or focused
+- `target_energy` — float 0–1 representing how high- or low-energy the user wants songs to feel
+
 
 ---
 
@@ -209,3 +270,4 @@ A few sentences about what you learned:
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
 
+![Terminal output showing top 5 recommendations for the pop/happy profile, with scores and reasons](Phase3_Step4.png)

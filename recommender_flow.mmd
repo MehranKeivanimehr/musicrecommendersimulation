@@ -1,0 +1,23 @@
+flowchart TD
+    A([User Preferences\ngenre · mood · energy]) --> C
+    B([songs.csv catalog]) --> C
+
+    C[For each song in catalog] --> D
+
+    D[Compare song features\nto user preferences] --> E
+
+    E[Calculate score\n+2.0 genre match\n+1.0 mood match\n+0.0–1.0 energy similarity] --> F
+
+    F[Store song + score] --> G{More songs?}
+
+    G -- Yes --> C
+    G -- No --> H[Sort all songs\nby score descending]
+
+    H --> I([Return top K\nrecommendations])
+**How the Recommender computes a score**
+
+Each song is scored independently against the user profile using a weighted formula. Genre and mood each produce a 0 or 1 depending on whether they match the user's preference. Energy and tempo produce a closeness value between 0 and 1, where 1 means a perfect match and the score decreases as the song drifts from the user's target. Each result is multiplied by its weight, summed, and divided by the maximum possible score (7.0) so every song ends up with a normalized value between 0 and 1.
+
+**How the system chooses which songs to recommend**
+
+After every song in the catalog is scored, the system sorts all songs from highest to lowest score and returns the top `k` results (default is 5). Songs with equal scores keep their original catalog order. The final list is what the user sees as their recommendations.
