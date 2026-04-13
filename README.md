@@ -129,11 +129,17 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+**Weight shift — halving genre, doubling energy.**
+Changed genre from +2.0 to +1.0 and raised the energy ceiling from 1.0 to 2.0. The #1 result stayed the same for all three profiles, which confirmed the top song had a genuine lead. The middle of the rankings shifted: Rooftop Lights moved above Gym Hero for the pop user because its energy was a closer match, and Iron Curtain entered the rock top 5 for the first time because its high energy (0.96) now outweighed the genre mismatch. The experiment showed the system is stable at the top but sensitive to weights in positions 2–5.
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Three scoring modes — Genre-First, Mood-First, Energy-Focused.**
+Built a strategy pattern so each profile could run under a different set of base weights. Under Mood-First, the Chill Lofi profile surfaced Spacewalk Thoughts (ambient) at #3 — a cross-genre result that never appeared under Genre-First. Under Energy-Focused, the Deep Intense Rock profile promoted Iron Curtain (metal) because pure intensity mattered more than the genre label. Switching modes changed which signal was decisive without touching any other logic.
+
+**Diversity penalty.**
+Added artist and genre penalties applied during greedy selection. For the Chill Lofi profile, LoRoom (the artist behind Midnight Coding and Focus Flow) only appeared once without penalty — the second appearance was demoted by 1.0 point. The penalty is visible in the output table so you can see exactly which songs were affected and why.
+
+**Adversarial profiles.**
+Tested five edge-case profiles designed to break the scoring logic: a genre not in the catalog, a lofi user asking for energy 0.95, a classical user asking for aggressive mood, and an out-of-range tempo target of 250 BPM. All five revealed real weaknesses — the most striking was that a missing genre silently zeroes out the dominant signal, and the system returns results with no warning.
 
 ---
 
@@ -151,14 +157,11 @@ Use this section to document the experiments you ran. For example:
 
 ## Reflection
 
-Read and complete `model_card.md`:
-
 [**Model Card**](model_card.md)
 
-Write 1 to 2 paragraphs here about what you learned:
+The biggest thing this project taught me is that a recommender does not need to be complex to feel convincing. The scoring logic here is just addition — a few if-statements and some arithmetic — but the output looks like something you would see in a real app. That gap between how simple the system is and how confident it appears is where the risk lives. The Deep Intense Rock profile returned five results in a clean table even though four of them had nothing to do with rock. Nothing in the output flagged that. A real user would just see five songs and assume the system knew what it was doing.
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+The bias issues were easier to spot once I started running profiles that pushed against the edges of the data. Genre matching using exact strings means "indie pop" and "pop" are strangers to the scorer, even though a human listener would treat them as close relatives. The catalog only has one rock song, one metal song, one jazz song — so any user in those genres is getting one real match and four fillers, and the system presents all five the same way. Building these systems made me realize that fairness problems in AI often are not in the algorithm itself but in the data it was given and the assumptions baked in about what counts as a match.
 
 
 ---
