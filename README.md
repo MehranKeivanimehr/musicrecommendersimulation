@@ -139,15 +139,13 @@ Use this section to document the experiments you ran. For example:
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+**Genre sparsity creates a false confidence problem.** 13 out of 15 genres in the catalog have exactly one song, meaning a user who prefers rock, metal, jazz, blues, or any of those genres can only ever receive one genre-matched recommendation — and the remaining four slots are filled with energy/tempo-adjacent songs from completely unrelated genres. The system presents these filler results with the same confident formatting as genuine matches, giving the user no indication that 80% of their "rock recommendations" are not rock at all.
 
-Examples:
+**Lofi users live in a filter bubble.** Lofi is the only genre with three catalog entries, so a lofi listener's top three slots are structurally locked to lofi songs regardless of how any other song scores. This means the recommender never surfaces a cross-genre discovery for the genre it happens to cover best — the opposite of what a good recommender should do for an over-represented category.
 
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
+**The energy floor hides poor fits.** Because energy similarity uses `max(0.0, 1.0 - |diff|)`, a song that is 0.8 energy units away from the user's target still earns 0.2 points rather than being penalized. Combined with genre and mood bonuses, this means a song can rank in the top five while being completely wrong on the one continuous signal the user provided.
 
-You will go deeper on this in your model card.
+**Semantic genre neighbors are invisible to the scorer.** "indie pop" and "pop" are treated as unrelated strings, so Rooftop Lights — which any human listener would place near the pop category — scores zero on genre for a pop user and ranks below songs that match the genre tag but contradict the mood. The system has no way to reason about genre similarity, only genre equality.
 
 ---
 
@@ -271,3 +269,9 @@ A few sentences about what you learned:
 - Where do you think human judgment still matters, even if the model seems "smart"
 
 ![Terminal output showing top 5 recommendations for the pop/happy profile, with scores and reasons](Phase3_Step4.png)
+
+Profiles:
+
+1) ![alt text](Profile1.png)
+2) ![alt text](Profile2.png)
+3) ![alt text](Profile3.png)
